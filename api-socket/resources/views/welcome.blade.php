@@ -8,13 +8,24 @@
 </head>
 <body>
     @vite(['resources/js/app.js'])
+    {{Auth::user()->id}}
 </body>
 <script>
-    setTimeout(() => {
+    /*setTimeout(() => {
         window.Echo.channel('channel')
             .listen('SocketEvent', (e) => {
                 console.log(e);
             });
-    }, 200);
+    }, 200);*/
+    const userId = {{ Auth::user()->id }};
+
+    setTimeout(() => {
+        window.Echo.private('channel-private.' + userId)
+            .listen('EventPrivate', (e) => {
+                console.log(e);
+            });
+    }, 1000);
+    //window.Echo.connector.pusher.connection.socket_id
 </script>
 </html>
+
