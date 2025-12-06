@@ -14,7 +14,9 @@
                         </div>
                     @endif
 
-                    {{ __('You are logged in!') }}
+                    <p class="mb-3">{{ __('You are logged in!') }}</p>
+
+                    <a class="btn btn-primary" href="{{ route('users.manage') }}">Gestión de usuarios</a>
                 </div>
             </div>
         </div>

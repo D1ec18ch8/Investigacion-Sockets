@@ -12,4 +12,11 @@ Broadcast::channel('channel-private.{userID}', function ($user, $userID) {
     return (int) $user->id === (int) $userID;
 });
 
+Broadcast::channel('user-management', function ($user) {
+    return [
+        'id' => $user->id,
+        'name' => $user->name,
+    ];
+});
+
 
