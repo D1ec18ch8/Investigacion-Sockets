@@ -37,7 +37,8 @@ class UserManageController extends Controller
         ]);
 
         $key = $this->lockKey($validated['user_id'], $validated['field']);
-        $current = Cache::get($key);
+        $store = Cache::store('redis');
+        $current = $store->get($key);
 
         // If already locked by another user, reject
         if ($current && $current['byId'] !== $request->user()->id) {
@@ -54,14 +55,15 @@ class UserManageController extends Controller
             'lockedAt' => Carbon::now()->toIso8601String(),
         ];
 
-        Cache::put($key, $payload, now()->addMinutes(2));
+        // Store with TTL using cache (120 seconds = 2 minutes)
+        $store->put($key, $payload, 120);
 
         broadcast(new UserFieldLocked(
             userId: $validated['user_id'],
             field: $validated['field'],
             byId: $request->user()->id,
             byName: $request->user()->name,
-        ))->toOthers();
+        ));
 
         return response()->json(['ok' => true]);
     }
@@ -74,21 +76,23 @@ class UserManageController extends Controller
         ]);
 
         $key = $this->lockKey($validated['user_id'], $validated['field']);
-        $current = Cache::get($key);
+        $store = Cache::store('redis');
+        $current = $store->get($key);
 
         // Only the locker can unlock
         if ($current && $current['byId'] !== $request->user()->id) {
             return response()->json(['ok' => false, 'lockedByOther' => true], 409);
         }
 
-        Cache::forget($key);
+        // Atomic delete from Redis
+        $store->forget($key);
 
         broadcast(new UserFieldUnlocked(
             userId: $validated['user_id'],
             field: $validated['field'],
             byId: $request->user()->id,
             byName: $request->user()->name,
-        ))->toOthers();
+        ));
 
         return response()->json(['ok' => true]);
     }
@@ -106,7 +110,7 @@ class UserManageController extends Controller
             $user,
             $request->user()->id,
             $request->user()->name,
-        ))->toOthers();
+        ));
 
         return back()->with('status', 'Usuario actualizado correctamente.');
     }
@@ -116,3 +120,4 @@ class UserManageController extends Controller
         return "locks:user:{$userId}:{$field}";
     }
 }
+
